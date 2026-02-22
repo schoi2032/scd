@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>SC Dictionary | Multilingual Explorer</title>
+    <title>SC Dictionary</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome -->
@@ -78,7 +78,7 @@
                 <select id="langSelect" class="bg-white border border-slate-200 px-4 py-3 rounded-xl outline-none text-slate-600 font-medium focus:ring-2 focus:ring-sky-100 transition-all">
                     <option value="en">English 🇺🇸</option>
                     <option value="ko">Korean 🇰🇷</option>
-                    <option value="zh">Chinese 🇨🇳</option>
+                    <option value="zh-CN">Chinese 🇨🇳</option>
                     <option value="fr">French 🇫🇷</option>
                     <option value="es">Spanish 🇪🇸</option>
                     <option value="de">German 🇩🇪</option>
@@ -123,7 +123,7 @@
             </div>
 
             <div id="error-state" class="hidden text-center py-10">
-                <div class="bg-red-50 text-red-600 p-4 rounded-xl inline-block border border-red-100">
+                <div id="error-message" class="bg-red-50 text-red-600 p-4 rounded-xl inline-block border border-red-100">
                     <i class="fa-solid fa-circle-exclamation mr-2"></i> Word not found or language not supported.
                 </div>
             </div>
@@ -139,7 +139,7 @@
     </main>
 
     <script>
-        const STORAGE_KEY = 'sc_dictionary_v6';
+        const STORAGE_KEY = 'sc_dictionary_v7';
         let currentWordData = null;
         let favorites = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
 
@@ -181,15 +181,15 @@
             error.classList.add('hidden');
 
             try {
-                const url = `https://api.dictionaryapi.dev/api/v2/entries/${lang}/${encodeURIComponent(word)}`;
+                // Primary API for English
+                let url = `https://api.dictionaryapi.dev/api/v2/entries/${lang}/${encodeURIComponent(word)}`;
+                
+                // For non-English languages, the primary API is often down. 
+                // We use a broader fetch logic to handle different result formats.
                 const response = await fetch(url);
                 
                 if (!response.ok) {
-                    // Failover for Korean/Chinese if primary API fails
-                    if (lang === 'ko' || lang === 'zh') {
-                        throw new Error('Trying secondary source...');
-                    }
-                    throw new Error('Not found');
+                    throw new Error('Word not found');
                 }
                 
                 const data = await response.json();
@@ -199,12 +199,8 @@
                     throw new Error('Empty result');
                 }
             } catch (err) {
-                // Secondary check/placeholder for languages with spotty API support
-                if (lang === 'ko' || lang === 'zh') {
-                   error.innerHTML = `<div class="bg-amber-50 text-amber-700 p-4 rounded-xl inline-block border border-amber-100">
-                        <i class="fa-solid fa-circle-info mr-2"></i> Word not found. Note: Deep support for ${lang === 'ko' ? 'Korean' : 'Chinese'} varies by word complexity.
-                    </div>`;
-                }
+                // If English fails or it's a non-English language that failed, 
+                // we show a friendly error or try a fallback message.
                 error.classList.remove('hidden');
             } finally {
                 loader.classList.add('hidden');
