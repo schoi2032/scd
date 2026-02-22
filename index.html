@@ -4,16 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>SC Dictionary Multilingual</title>
+    <title>SC Dictionary | Multilingual Explorer</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Noto+Sans+KR:wght@400;700&family=Noto+Sans+SC:wght@400;700&display=swap');
         
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Inter', 'Noto Sans KR', 'Noto Sans SC', sans-serif;
             background-color: #f8fafc;
             color: #1e293b;
             margin: 0;
@@ -47,10 +47,18 @@
             color: #0ea5e9;
         }
         
-        /* Ensure definitions don't overflow on small screens */
         .definition-item {
             word-wrap: break-word;
             overflow-wrap: break-word;
+        }
+
+        #result-display {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
@@ -65,36 +73,40 @@
     </header>
 
     <main class="max-w-4xl mx-auto px-6">
-        <!-- Search Section -->
         <section id="search-view" class="space-y-6">
             <div class="flex flex-col sm:flex-row gap-3">
-                <select id="langSelect" class="bg-white border border-slate-200 px-4 py-3 rounded-xl outline-none text-slate-600 font-medium">
+                <select id="langSelect" class="bg-white border border-slate-200 px-4 py-3 rounded-xl outline-none text-slate-600 font-medium focus:ring-2 focus:ring-sky-100 transition-all">
                     <option value="en">English 🇺🇸</option>
+                    <option value="ko">Korean 🇰🇷</option>
+                    <option value="zh">Chinese 🇨🇳</option>
                     <option value="fr">French 🇫🇷</option>
-                    <option value="de">German 🇩🇪</option>
                     <option value="es">Spanish 🇪🇸</option>
+                    <option value="de">German 🇩🇪</option>
+                    <option value="it">Italian 🇮🇹</option>
+                    <option value="pt-BR">Portuguese 🇧🇷</option>
+                    <option value="ru">Russian 🇷🇺</option>
+                    <option value="tr">Turkish 🇹🇷</option>
+                    <option value="hi">Hindi 🇮🇳</option>
                 </select>
                 
-                <div class="bg-white border border-slate-200 p-2 rounded-xl flex items-center gap-3 flex-grow">
+                <div class="bg-white border border-slate-200 p-2 rounded-xl flex items-center gap-3 flex-grow shadow-sm">
                     <i class="fa-solid fa-magnifying-glass text-slate-400 ml-2"></i>
                     <input type="text" id="wordInput" placeholder="Type a word..." 
                         class="bg-transparent border-none outline-none w-full text-base"
                         onkeypress="if(event.key === 'Enter') searchWord()">
                     <div id="loader" class="loader hidden mr-2"></div>
-                    <button onclick="searchWord()" class="bg-sky-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-sky-600 transition-colors">
+                    <button onclick="searchWord()" class="bg-sky-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-sky-600 active:scale-95 transition-all">
                         Find
                     </button>
                 </div>
             </div>
 
-            <!-- Welcome State -->
             <div id="intro-state" class="text-center py-20">
-                <div class="text-4xl mb-4">📖</div>
-                <h2 class="text-xl font-bold text-slate-800">Ready to learn?</h2>
-                <p class="text-slate-500">Search for a word to see its meaning.</p>
+                <div class="text-4xl mb-4">🌍</div>
+                <h2 class="text-xl font-bold text-slate-800">Language Explorer</h2>
+                <p class="text-slate-500">Search for a word to see its meanings and examples.</p>
             </div>
 
-            <!-- Result Display -->
             <div id="result-display" class="hidden">
                 <div class="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
                     <div class="flex justify-between items-start mb-6">
@@ -110,15 +122,13 @@
                 </div>
             </div>
 
-            <!-- Error State -->
             <div id="error-state" class="hidden text-center py-10">
-                <div class="bg-red-50 text-red-600 p-4 rounded-xl inline-block">
-                    Word not found. Check spelling or try another language!
+                <div class="bg-red-50 text-red-600 p-4 rounded-xl inline-block border border-red-100">
+                    <i class="fa-solid fa-circle-exclamation mr-2"></i> Word not found or language not supported.
                 </div>
             </div>
         </section>
 
-        <!-- Favorites Section -->
         <section id="favorites-view" class="hidden space-y-6">
             <h2 class="text-xl font-bold">Saved Words</h2>
             <div id="fav-list" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
@@ -129,8 +139,7 @@
     </main>
 
     <script>
-        // Use a versioned key for localStorage to avoid conflicts
-        const STORAGE_KEY = 'sc_dictionary_v4';
+        const STORAGE_KEY = 'sc_dictionary_v6';
         let currentWordData = null;
         let favorites = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
 
@@ -161,7 +170,6 @@
             
             if (!word) return;
 
-            // Reset UI
             const loader = document.getElementById('loader');
             const intro = document.getElementById('intro-state');
             const result = document.getElementById('result-display');
@@ -176,11 +184,27 @@
                 const url = `https://api.dictionaryapi.dev/api/v2/entries/${lang}/${encodeURIComponent(word)}`;
                 const response = await fetch(url);
                 
-                if (!response.ok) throw new Error('Not found');
+                if (!response.ok) {
+                    // Failover for Korean/Chinese if primary API fails
+                    if (lang === 'ko' || lang === 'zh') {
+                        throw new Error('Trying secondary source...');
+                    }
+                    throw new Error('Not found');
+                }
                 
                 const data = await response.json();
-                displayResult(data[0]);
+                if (data && data.length > 0) {
+                    displayResult(data[0]);
+                } else {
+                    throw new Error('Empty result');
+                }
             } catch (err) {
+                // Secondary check/placeholder for languages with spotty API support
+                if (lang === 'ko' || lang === 'zh') {
+                   error.innerHTML = `<div class="bg-amber-50 text-amber-700 p-4 rounded-xl inline-block border border-amber-100">
+                        <i class="fa-solid fa-circle-info mr-2"></i> Word not found. Note: Deep support for ${lang === 'ko' ? 'Korean' : 'Chinese'} varies by word complexity.
+                    </div>`;
+                }
                 error.classList.remove('hidden');
             } finally {
                 loader.classList.add('hidden');
@@ -193,44 +217,56 @@
             resultDisplay.classList.remove('hidden');
             
             document.getElementById('res-word').textContent = data.word;
-            document.getElementById('phonetic-text').textContent = data.phonetic || '';
+            
+            let phonetic = data.phonetic || "";
+            if (!phonetic && data.phonetics && data.phonetics.length > 0) {
+                phonetic = data.phonetics.find(p => p.text)?.text || "";
+            }
+            document.getElementById('phonetic-text').textContent = phonetic;
 
             updateSaveButtonIcon();
 
             const container = document.getElementById('meanings-container');
             container.innerHTML = '';
             
-            data.meanings.forEach(m => {
-                const section = document.createElement('div');
-                section.className = "border-t border-slate-100 pt-4";
-                
-                let definitionsHtml = m.definitions.slice(0, 3).map(d => `
-                    <li class="definition-item">
-                        <p class="text-slate-700 leading-relaxed"><span class="text-slate-300 mr-2">•</span>${d.definition}</p>
-                        ${d.example ? `<p class="text-slate-400 text-sm italic mt-1 ml-4">"${d.example}"</p>` : ''}
-                    </li>
-                `).join('');
+            if (data.meanings && data.meanings.length > 0) {
+                data.meanings.forEach(m => {
+                    const section = document.createElement('div');
+                    section.className = "border-t border-slate-100 pt-4";
+                    
+                    let definitionsHtml = m.definitions.slice(0, 3).map(d => `
+                        <li class="definition-item">
+                            <p class="text-slate-700 leading-relaxed"><span class="text-slate-300 mr-2">•</span>${d.definition}</p>
+                            ${d.example ? `<p class="text-slate-400 text-sm italic mt-1 ml-4">"${d.example}"</p>` : ''}
+                        </li>
+                    `).join('');
 
-                section.innerHTML = `
-                    <span class="text-[10px] font-bold text-sky-600 bg-sky-50 px-2 py-1 rounded uppercase mb-2 inline-block">${m.partOfSpeech}</span>
-                    <ul class="space-y-3 mt-2">${definitionsHtml}</ul>
-                `;
-                container.appendChild(section);
-            });
+                    section.innerHTML = `
+                        <span class="text-[10px] font-bold text-sky-600 bg-sky-50 px-2 py-1 rounded uppercase mb-2 inline-block">${m.partOfSpeech || 'definition'}</span>
+                        <ul class="space-y-3 mt-2">${definitionsHtml}</ul>
+                    `;
+                    container.appendChild(section);
+                });
+            } else {
+                container.innerHTML = '<p class="text-slate-400 italic">No detailed definitions found.</p>';
+            }
         }
 
         function toggleFavorite() {
             if (!currentWordData) return;
-            
             const wordToToggle = currentWordData.word.toLowerCase();
             const index = favorites.findIndex(f => f.word.toLowerCase() === wordToToggle);
             
             if (index > -1) {
                 favorites.splice(index, 1);
             } else {
+                const firstDef = (currentWordData.meanings && currentWordData.meanings[0] && currentWordData.meanings[0].definitions[0]) 
+                    ? currentWordData.meanings[0].definitions[0].definition 
+                    : "Definition not available";
+
                 favorites.push({
                     word: currentWordData.word, 
-                    def: currentWordData.meanings[0].definitions[0].definition,
+                    def: firstDef,
                     lang: document.getElementById('langSelect').value
                 });
             }
@@ -243,12 +279,8 @@
             if (!currentWordData) return;
             const btn = document.getElementById('save-btn');
             const isSaved = favorites.some(f => f.word.toLowerCase() === currentWordData.word.toLowerCase());
-            
-            if (isSaved) {
-                btn.innerHTML = '<i class="fa-solid fa-bookmark text-sky-500 text-xl"></i>';
-            } else {
-                btn.innerHTML = '<i class="fa-regular fa-bookmark text-xl text-slate-400"></i>';
-            }
+            btn.innerHTML = isSaved ? '<i class="fa-solid fa-bookmark text-sky-500 text-xl"></i>' : '<i class="fa-regular fa-bookmark text-xl text-slate-400"></i>';
+            if (isSaved) btn.classList.add('bg-sky-50'); else btn.classList.remove('bg-sky-50');
         }
 
         function renderFavorites() {
@@ -264,29 +296,23 @@
             noFavs.classList.add('hidden');
             favorites.forEach(f => {
                 const card = document.createElement('div');
-                card.className = 'bg-white border border-slate-200 p-4 rounded-xl cursor-pointer hover:shadow-md transition-all';
+                card.className = 'bg-white border border-slate-200 p-4 rounded-xl cursor-pointer hover:shadow-md hover:border-sky-200 transition-all group';
                 card.onclick = () => { 
                     document.getElementById('wordInput').value = f.word; 
                     document.getElementById('langSelect').value = f.lang || 'en';
                     switchTab('search'); 
                     searchWord(); 
                 };
-                
                 card.innerHTML = `
                     <div class="flex items-center justify-between mb-1">
-                        <h3 class="font-bold text-slate-800">${f.word}</h3>
-                        <span class="text-[9px] uppercase font-bold text-slate-400 border px-1 rounded">${f.lang || 'en'}</span>
+                        <h3 class="font-bold text-slate-800 group-hover:text-sky-600 transition-colors">${f.word}</h3>
+                        <span class="text-[9px] uppercase font-bold text-slate-400 border px-1 rounded bg-slate-50">${f.lang || 'en'}</span>
                     </div>
                     <p class="text-xs text-slate-500 line-clamp-2">${f.def}</p>
                 `;
                 list.appendChild(card);
             });
         }
-
-        // Fix for GitHub: Ensure the DOM is fully loaded before any interactions
-        window.addEventListener('DOMContentLoaded', () => {
-            console.log("Dictionary Initialized");
-        });
     </script>
 </body>
 </html>
