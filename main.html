@@ -15,6 +15,8 @@
             background: #f8fafc;
             color: #1e293b;
             overflow-x: hidden;
+            margin: 0;
+            padding: 0;
         }
 
         .glass-card {
@@ -50,7 +52,7 @@
             100% { transform: rotate(360deg); }
         }
 
-        .hidden { display: none; }
+        .hidden { display: none !important; }
         
         .tab-active {
             border-bottom: 3px solid #0ea5e9;
@@ -133,9 +135,18 @@
         function switchTab(tab) {
             document.getElementById('search-view').classList.toggle('hidden', tab !== 'search');
             document.getElementById('favorites-view').classList.toggle('hidden', tab !== 'favorites');
-            document.getElementById('searchTab').className = tab === 'search' ? 'tab-active pb-1 font-medium text-sm' : 'pb-1 font-medium text-slate-400 text-sm';
-            document.getElementById('favsTab').className = tab === 'favorites' ? 'tab-active pb-1 font-medium text-sm' : 'pb-1 font-medium text-slate-400 text-sm';
-            if(tab === 'favorites') renderFavorites();
+            
+            const sTab = document.getElementById('searchTab');
+            const fTab = document.getElementById('favsTab');
+            
+            if (tab === 'search') {
+                sTab.className = 'tab-active pb-1 font-medium text-sm';
+                fTab.className = 'pb-1 font-medium text-slate-400 text-sm';
+            } else {
+                fTab.className = 'tab-active pb-1 font-medium text-sm';
+                sTab.className = 'pb-1 font-medium text-slate-400 text-sm';
+                renderFavorites();
+            }
         }
 
         async function searchWord() {
@@ -149,7 +160,6 @@
             document.getElementById('error-state').classList.add('hidden');
 
             try {
-                // The Dictionary API uses ISO codes for languages (en, fr, de, es)
                 const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/${lang}/${word}`);
                 if (!response.ok) throw new Error();
                 const data = await response.json();
@@ -217,28 +227,34 @@
         function renderFavorites() {
             const list = document.getElementById('fav-list');
             list.innerHTML = '';
-            document.getElementById('no-favs').classList.toggle('hidden', favorites.length > 0);
-            favorites.forEach(f => {
-                const d = document.createElement('div');
-                d.className = 'glass-card p-4 rounded-xl cursor-pointer hover:border-sky-200 transition-all flex justify-between items-center';
-                d.onclick = () => { 
-                    document.getElementById('wordInput').value = f.word; 
-                    document.getElementById('langSelect').value = f.lang || 'en';
-                    switchTab('search'); 
-                    searchWord(); 
-                };
-                d.innerHTML = `
-                    <div class="max-w-[80%]">
-                        <div class="flex items-center gap-2">
-                            <h3 class="font-bold text-slate-800 break-long-words">${f.word}</h3>
-                            <span class="text-[9px] uppercase font-bold text-slate-300 border px-1 rounded">${f.lang || 'en'}</span>
+            const noFavs = document.getElementById('no-favs');
+            
+            if (favorites.length > 0) {
+                noFavs.classList.add('hidden');
+                favorites.forEach(f => {
+                    const d = document.createElement('div');
+                    d.className = 'glass-card p-4 rounded-xl cursor-pointer hover:border-sky-200 transition-all flex justify-between items-center';
+                    d.onclick = () => { 
+                        document.getElementById('wordInput').value = f.word; 
+                        document.getElementById('langSelect').value = f.lang || 'en';
+                        switchTab('search'); 
+                        searchWord(); 
+                    };
+                    d.innerHTML = `
+                        <div class="max-w-[80%]">
+                            <div class="flex items-center gap-2">
+                                <h3 class="font-bold text-slate-800 break-long-words">${f.word}</h3>
+                                <span class="text-[9px] uppercase font-bold text-slate-300 border px-1 rounded">${f.lang || 'en'}</span>
+                            </div>
+                            <p class="text-xs text-slate-400 line-clamp-1 mt-1">${f.def}</p>
                         </div>
-                        <p class="text-xs text-slate-400 line-clamp-1 mt-1">${f.def}</p>
-                    </div>
-                    <i class="fa-solid fa-chevron-right text-slate-200 text-xs"></i>
-                `;
-                list.appendChild(d);
-            });
+                        <i class="fa-solid fa-chevron-right text-slate-200 text-xs"></i>
+                    `;
+                    list.appendChild(d);
+                });
+            } else {
+                noFavs.classList.remove('hidden');
+            }
         }
     </script>
 </body>
